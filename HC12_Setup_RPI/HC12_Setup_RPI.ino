@@ -21,6 +21,8 @@ void setup() {
   digitalWrite(SET_PIN, LOW); // 強制進入 AT 模式
   
   Serial.println("--- Pico 2 UART1 Basic Test ---");
+
+
 }
 
 void loop() {
@@ -34,8 +36,8 @@ void loop() {
     Serial.write(Serial2.read());
   }
 }
-
+/*
 void loop() {
   Serial.println(count++);
   delay(100);
-}
+}*/

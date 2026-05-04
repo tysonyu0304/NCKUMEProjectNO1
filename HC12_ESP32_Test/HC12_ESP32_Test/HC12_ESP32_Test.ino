@@ -16,21 +16,19 @@ void setup() {
   pinMode(HC12_SET, OUTPUT);
   
   // 進入 AT 模式：將 SET 拉低
-  digitalWrite(HC12_SET, LOW);
+  // digitalWrite(HC12_SET, LOW);
+  // 進入通訊模式
+  digitalWrite(HC12_SET, HIGH);
   delay(100); // 給模組一點反應時間
   
-  Serial.println("--- HC-12 AT Mode Test Start ---");
-  Serial.println("請在監控器輸入 'AT' (記得選 Both NL & CR)");
-}
-
+  // Serial.println("--- HC-12 AT Mode Test Start ---");
+  // Serial.println("請在監控器輸入 'AT' (記得選 Both NL & CR)");
+} 
 void loop() {
-  // 將電腦傳來的指令轉發給 HC-12
-  if (Serial.available()) {
-    HC12.write(Serial.read());
+  while (HC12.available()) {        // If HC-12 has data
+    Serial.write(HC12.read());      // Send the data to Serial monitor
   }
-
-  // 將 HC-12 回傳的結果顯示在電腦畫面上
-  if (HC12.available()) {
-    Serial.write(HC12.read());
+  while (Serial.available()) {      // If Serial monitor has data
+    HC12.write(Serial.read());      // Send that data to HC-12
   }
 }

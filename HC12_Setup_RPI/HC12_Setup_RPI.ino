@@ -9,7 +9,9 @@ void setup() {
   // 等待 USB Serial 穩定，防止開啟失敗
   for(int i=0; i<10; i++) {
     delay(100);
-  }
+  } 
+  
+  Serial.println("開機");
 
   // 初始化硬體 UART1 (GP4, GP5)
   // 在 Pico 2 中，Serial1 預設就是這組，不進行額外 setTX/RX 以免驅動報錯

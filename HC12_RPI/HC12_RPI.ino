@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Servo.h>
 
 #define TX2 4
 #define RX2 5
@@ -9,19 +8,11 @@
 #define LED_BUILTIN 25
 #endif
 
-// --- 修正 1：將參數移到最外面成為全局變數 ---
-const int CENTER = 1867;   
-const int DEADZONE = 100;  
-const float SPEED_SCALE = 0.001;
-
 String rxString = "";
-int x_val = 1867; // 初始設為中心值，避免開機時 offset 亂跳
+int x_val = 1867; 
+int y_val = 1867; 
 int btn = 1;
 
-Servo myServo;  
-float currentAngle = 90.0;
-
-// 函數預宣告
 void parseData(String data);
 
 void setup() {
@@ -30,16 +21,15 @@ void setup() {
     delay(100);
   }
 
+  // 初始化 Pico 2 的硬體 UART1
   Serial2.setTX(TX2);  
   Serial2.setRX(RX2);
   Serial2.begin(9600); 
 
   pinMode(SET_PIN, OUTPUT);
-  digitalWrite(SET_PIN, HIGH); 
+  digitalWrite(SET_PIN, HIGH); // 進入通訊模式
   
   pinMode(LED_BUILTIN, OUTPUT);
-  myServo.attach(21, 500, 2500);  
-  myServo.write(90);   
 }
 
 void loop() {
@@ -53,12 +43,6 @@ void loop() {
     } 
     else if (c == '>') {  
       parseData(rxString); 
-
-      Serial.print(">>> Received -> X: "); 
-      Serial.print(x_val);
-      Serial.print(" | Button: "); 
-      Serial.println(btn < 1 ? "Pressed" : "No");
-
       rxString = "";
     } 
     else {
@@ -69,39 +53,37 @@ void loop() {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
-  // --- 修正 2：將控制邏輯移出 while 迴圈外，確保隨時更新 ---
-  // 2. 計算偏移量
-  int offset = x_val - CENTER; 
-
-  // 3. 增量邏輯
-  if (abs(offset) > DEADZONE) {
-    currentAngle += (float)offset * SPEED_SCALE; 
-    
-    // 邊界保護
-    if (currentAngle > 180.0) currentAngle = 180.0;
-    if (currentAngle < 0.0) currentAngle = 0.0;
-
-    myServo.write((int)currentAngle);
-  }
-
-  // 4. 按鈕歸零功能
-  if (btn == 0) { 
-    currentAngle = 90.0;
-    myServo.write(90);
-  }
+  // 2. 輸出給 Serial Plotter 的專用格式
+  // 格式：標籤1:數值1,標籤2:數值2,標籤3:數值3 (最後換行)
+  Serial.print("RX_X:");
+  Serial.print(x_val);
+  Serial.print(",");
   
-  // 稍微小延遲，讓 loop 不要跑太快吃掉所有資源
-  delay(5);
+  Serial.print("RX_Y:");
+  Serial.print(y_val);
+  Serial.print(",");
+  
+  // 將按鈕狀態放大 1000 倍，沒按是 1000，按下是 0，這樣在圖表上才看得清楚波形
+  Serial.print("RX_Btn:");
+  Serial.println(btn * 2000); 
+
+  delay(30); // 縮短延遲至 30ms，讓繪圖器的滾動曲線更流暢
 }
 
+// 解析來自 MKR1000 的 <X,Y,Btn> 封包
 void parseData(String data) {
   data.trim();
-  int commaIndex = data.indexOf(',');
-  if (commaIndex != -1) {
-    String xStr = data.substring(0, commaIndex);
-    String btnStr = data.substring(commaIndex + 1);
+  
+  int firstComma = data.indexOf(',');
+  int secondComma = data.lastIndexOf(',');
+  
+  if (firstComma != -1 && secondComma != -1 && firstComma != secondComma) {
+    String xStr = data.substring(0, firstComma);
+    String yStr = data.substring(firstComma + 1, secondComma);
+    String btnStr = data.substring(secondComma + 1);
     
     x_val = xStr.toInt();
+    y_val = yStr.toInt();
     btn = btnStr.toInt();
   }
 }
